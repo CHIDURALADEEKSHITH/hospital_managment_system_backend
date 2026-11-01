@@ -1,9 +1,11 @@
+
 package com.hospital.service;
 
 import java.util.List;
 
 import com.hospital.entity.Appointment;
 import com.hospital.entity.Consultation;
+import com.hospital.entity.DoctorAvailability;
 import com.hospital.entity.LabTest;
 import com.hospital.entity.Prescription;
 import com.hospital.entity.User;
@@ -19,75 +21,54 @@ public interface DoctorService {
             String status
     );
 
-
     // PATIENT
     User getPatientById(Long patientId);
-
 
     // VITALS
     List<Vital> getPatientVitals(Long patientId);
 
-
     // CONSULTATION
-    Consultation createConsultation(
-            Consultation consultation
-    );
+    Consultation createConsultation(Consultation consultation);
 
-    Consultation getConsultationByAppointment(
-            Long appointmentId
-    );
+    Consultation getConsultationByAppointment(Long appointmentId);
 
-    List<Consultation> getDoctorConsultations(
-            Long doctorId
-    );
-
+    List<Consultation> getDoctorConsultations(Long doctorId);
 
     // PRESCRIPTION
-    Prescription createPrescription(
-            Prescription prescription
-    );
+    Prescription createPrescription(Prescription prescription);
 
-    List<Prescription> getPatientPrescriptions(
-            Long patientId
-    );
-
+    List<Prescription> getPatientPrescriptions(Long patientId);
 
     // LAB
-    LabTest orderLabTest(
-            LabTest labTest
-    );
+    LabTest orderLabTest(LabTest labTest);
 
-    List<LabTest> getPatientLabTests(
-            Long patientId
-    );
-
+    List<LabTest> getPatientLabTests(Long patientId);
 
     // RECOMMENDATIONS
-    Consultation recommendAdmission(
-            Long consultationId
-    );
+    Consultation recommendAdmission(Long consultationId);
 
-    Consultation recommendOperation(
-            Long consultationId
-    );
+    Consultation recommendOperation(Long consultationId);
 
-    Consultation recommendDischarge(
-            Long consultationId
-    );
-
+    Consultation recommendDischarge(Long consultationId);
 
     // DOCTOR SEARCH
     List<String> getSpecializations();
 
-    List<User> getDoctorsBySpecialization(
-            String specialization
-    );
-    
+    List<User> getDoctorsBySpecialization(String specialization);
+
     User getDoctorById(Long doctorId);
-    
+
     Appointment verifyAppointment(Long appointmentId);
-    
+
     List<Prescription> getPrescriptionsByAppointment(Long appointmentId);
-    
+
     List<Vital> getVitalsByAppointment(Long appointmentId);
+
+    // DOCTOR AVAILABILITY
+    DoctorAvailability addDoctorAvailability(
+            Long doctorId,
+            DoctorAvailability availability
+    );
+
+    List<DoctorAvailability> getDoctorAvailability(Long doctorId);
 }

@@ -1,18 +1,24 @@
+
 package com.hospital.service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.hospital.entity.Admission;
 import com.hospital.entity.Appointment;
 import com.hospital.entity.Consultation;
+import com.hospital.entity.DoctorAvailability;
 import com.hospital.entity.LabTest;
 import com.hospital.entity.Prescription;
 import com.hospital.entity.User;
 import com.hospital.entity.Vital;
+
 import com.hospital.repository.AdmissionRepository;
 import com.hospital.repository.AppointmentRepository;
 import com.hospital.repository.ConsultationRepository;
+import com.hospital.repository.DoctorAvailabilityRepository;
 import com.hospital.repository.LabTestRepository;
 import com.hospital.repository.PrescriptionRepository;
 import com.hospital.repository.UserRepository;
@@ -28,7 +34,7 @@ public class DoctorServiceImpl implements DoctorService {
     private final LabTestRepository labTestRepository;
     private final UserRepository userRepository;
     private final AdmissionRepository admissionRepository;
-
+    private final DoctorAvailabilityRepository doctorAvailabilityRepository;
 
     public DoctorServiceImpl(
             AppointmentRepository appointmentRepository,
@@ -37,7 +43,8 @@ public class DoctorServiceImpl implements DoctorService {
             PrescriptionRepository prescriptionRepository,
             LabTestRepository labTestRepository,
             UserRepository userRepository,
-            AdmissionRepository admissionRepository) {
+            AdmissionRepository admissionRepository,
+            DoctorAvailabilityRepository doctorAvailabilityRepository) {
 
         this.appointmentRepository = appointmentRepository;
         this.vitalRepository = vitalRepository;
@@ -46,35 +53,29 @@ public class DoctorServiceImpl implements DoctorService {
         this.labTestRepository = labTestRepository;
         this.userRepository = userRepository;
         this.admissionRepository = admissionRepository;
+        this.doctorAvailabilityRepository = doctorAvailabilityRepository;
     }
-
 
     // =========================================================
     // APPOINTMENTS
     // =========================================================
 
     @Override
-    public List<Appointment> getDoctorAppointments(
-            Long doctorId) {
+    public List<Appointment> getDoctorAppointments(Long doctorId) {
 
-        return appointmentRepository.findByDoctorId(
-                doctorId
-        );
+        return appointmentRepository.findByDoctorId(doctorId);
     }
-
 
     @Override
     public List<Appointment> getDoctorAppointmentsByStatus(
             Long doctorId,
             String status) {
 
-        return appointmentRepository
-                .findByDoctorIdAndStatus(
-                        doctorId,
-                        status
-                );
+        return appointmentRepository.findByDoctorIdAndStatus(
+                doctorId,
+                status
+        );
     }
-
 
     // =========================================================
     // PATIENT DETAILS
@@ -83,39 +84,26 @@ public class DoctorServiceImpl implements DoctorService {
     @Override
     public User getPatientById(Long patientId) {
 
-        User patient = userRepository
-                .findById(patientId)
+        User patient = userRepository.findById(patientId)
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Patient not found"
-                        )
-                );
+                        new RuntimeException("Patient not found"));
 
-        if (!"PATIENT".equalsIgnoreCase(
-                patient.getRole())) {
-
-            throw new RuntimeException(
-                    "User is not a patient"
-            );
+        if (!"PATIENT".equalsIgnoreCase(patient.getRole())) {
+            throw new RuntimeException("User is not a patient");
         }
 
         return patient;
     }
-
 
     // =========================================================
     // VITALS
     // =========================================================
 
     @Override
-    public List<Vital> getPatientVitals(
-            Long patientId) {
+    public List<Vital> getPatientVitals(Long patientId) {
 
-        return vitalRepository.findByPatientId(
-                patientId
-        );
+        return vitalRepository.findByPatientId(patientId);
     }
-
 
     // =========================================================
     // CONSULTATION
@@ -128,141 +116,98 @@ public class DoctorServiceImpl implements DoctorService {
                 consultation.getAppointment().getId() == null) {
 
             throw new RuntimeException(
-                    "Appointment is required for consultation"
-            );
+                    "Appointment is required for consultation");
         }
 
         if (consultation.getDoctor() == null ||
                 consultation.getDoctor().getId() == null) {
 
             throw new RuntimeException(
-                    "Doctor is required for consultation"
-            );
+                    "Doctor is required for consultation");
         }
 
         if (consultation.getPatient() == null ||
                 consultation.getPatient().getId() == null) {
 
             throw new RuntimeException(
-                    "Patient is required for consultation"
-            );
+                    "Patient is required for consultation");
         }
 
-
-        // Find actual appointment
         Appointment appointment = appointmentRepository.findById(
                 consultation.getAppointment().getId()
         ).orElseThrow(() ->
                 new RuntimeException(
                         "Appointment not found: "
-                        + consultation.getAppointment().getId()
-                )
-        );
+                                + consultation.getAppointment().getId()));
 
-
-        // Find actual doctor
         User doctor = userRepository.findById(
                 consultation.getDoctor().getId()
         ).orElseThrow(() ->
-                new RuntimeException(
-                        "Doctor not found"
-                )
-        );
+                new RuntimeException("Doctor not found"));
 
-
-        // Find actual patient
         User patient = userRepository.findById(
                 consultation.getPatient().getId()
         ).orElseThrow(() ->
-                new RuntimeException(
-                        "Patient not found"
-                )
-        );
+                new RuntimeException("Patient not found"));
 
-
-        // Set real entities
         consultation.setAppointment(appointment);
         consultation.setDoctor(doctor);
         consultation.setPatient(patient);
 
-
-        // Set consultation date automatically
         if (consultation.getConsultationDate() == null) {
-
             consultation.setConsultationDate(
-                    java.time.LocalDateTime.now()
-            );
+                    java.time.LocalDateTime.now());
         }
-
 
         return consultationRepository.save(consultation);
     }
 
-
     @Override
-    public Consultation getConsultationByAppointment(
-            Long appointmentId) {
+    public Consultation getConsultationByAppointment(Long appointmentId) {
 
-        return consultationRepository
-                .findByAppointmentId(appointmentId)
+        return consultationRepository.findByAppointmentId(appointmentId)
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Consultation not found"
-                        )
-                );
+                        new RuntimeException("Consultation not found"));
     }
-
 
     @Override
-    public List<Consultation> getDoctorConsultations(
-            Long doctorId) {
+    public List<Consultation> getDoctorConsultations(Long doctorId) {
 
-        return consultationRepository
-                .findByDoctorId(doctorId);
+        return consultationRepository.findByDoctorId(doctorId);
     }
-
 
     // =========================================================
     // PRESCRIPTIONS
     // =========================================================
 
     @Override
-    public Prescription createPrescription(
-            Prescription prescription) {
+    public Prescription createPrescription(Prescription prescription) {
 
         User doctor = userRepository.findById(
                 prescription.getDoctor().getId()
         ).orElseThrow(() ->
-                new RuntimeException("Doctor not found")
-        );
+                new RuntimeException("Doctor not found"));
 
         User patient = userRepository.findById(
                 prescription.getPatient().getId()
         ).orElseThrow(() ->
-                new RuntimeException("Patient not found")
-        );
+                new RuntimeException("Patient not found"));
 
         prescription.setDoctor(doctor);
         prescription.setPatient(patient);
 
         if (prescription.getPrescriptionDate() == null) {
-            prescription.setPrescriptionDate(
-                    java.time.LocalDate.now()
-            );
+            prescription.setPrescriptionDate(LocalDate.now());
         }
 
         return prescriptionRepository.save(prescription);
     }
 
-
     @Override
-    public List<Prescription> getPatientPrescriptions(
-            Long patientId) {
+    public List<Prescription> getPatientPrescriptions(Long patientId) {
 
-        return prescriptionRepository
-                .findByPatientId(patientId);
+        return prescriptionRepository.findByPatientId(patientId);
     }
-
 
     // =========================================================
     // LAB
@@ -292,45 +237,39 @@ public class DoctorServiceImpl implements DoctorService {
         User patient = userRepository.findById(
                 labTest.getPatient().getId()
         ).orElseThrow(() ->
-                new RuntimeException("Patient not found")
-        );
+                new RuntimeException("Patient not found"));
 
         User doctor = userRepository.findById(
                 labTest.getDoctor().getId()
         ).orElseThrow(() ->
-                new RuntimeException("Doctor not found")
-        );
+                new RuntimeException("Doctor not found"));
 
         Appointment appointment = appointmentRepository.findById(
                 labTest.getAppointment().getId()
         ).orElseThrow(() ->
-                new RuntimeException("Appointment not found")
-        );
+                new RuntimeException("Appointment not found"));
 
         if (appointment.getPatient() == null ||
                 appointment.getPatient().getId() == null ||
-                !appointment.getPatient().getId()
-                        .equals(patient.getId())) {
+                !appointment.getPatient().getId().equals(patient.getId())) {
 
             throw new RuntimeException(
-                    "Appointment does not belong to this patient"
-            );
+                    "Appointment does not belong to this patient");
         }
 
         if (appointment.getDoctor() == null ||
                 appointment.getDoctor().getId() == null ||
-                !appointment.getDoctor().getId()
-                        .equals(doctor.getId())) {
+                !appointment.getDoctor().getId().equals(doctor.getId())) {
 
             throw new RuntimeException(
-                    "Appointment does not belong to this doctor"
-            );
+                    "Appointment does not belong to this doctor");
         }
 
         labTest.setPatient(patient);
         labTest.setDoctor(doctor);
         labTest.setAppointment(appointment);
-        List<com.hospital.entity.Admission> activeAdmissions =
+
+        List<Admission> activeAdmissions =
                 admissionRepository.findByPatientIdAndStatus(
                         patient.getId(),
                         "ADMITTED"
@@ -350,75 +289,51 @@ public class DoctorServiceImpl implements DoctorService {
     }
 
     @Override
-    public List<LabTest> getPatientLabTests(
-            Long patientId) {
+    public List<LabTest> getPatientLabTests(Long patientId) {
 
-        return labTestRepository
-                .findByPatientId(patientId);
+        return labTestRepository.findByPatientId(patientId);
     }
-
 
     // =========================================================
     // RECOMMENDATIONS
     // =========================================================
 
     @Override
-    public Consultation recommendAdmission(
-            Long consultationId) {
+    public Consultation recommendAdmission(Long consultationId) {
 
-        Consultation consultation =
-                getConsultation(consultationId);
+        Consultation consultation = getConsultation(consultationId);
 
         consultation.setAdmissionRecommended(true);
 
-        return consultationRepository.save(
-                consultation
-        );
+        return consultationRepository.save(consultation);
     }
 
-
     @Override
-    public Consultation recommendOperation(
-            Long consultationId) {
+    public Consultation recommendOperation(Long consultationId) {
 
-        Consultation consultation =
-                getConsultation(consultationId);
+        Consultation consultation = getConsultation(consultationId);
 
         consultation.setOperationRecommended(true);
 
-        return consultationRepository.save(
-                consultation
-        );
+        return consultationRepository.save(consultation);
     }
 
-
     @Override
-    public Consultation recommendDischarge(
-            Long consultationId) {
+    public Consultation recommendDischarge(Long consultationId) {
 
-        Consultation consultation =
-                getConsultation(consultationId);
+        Consultation consultation = getConsultation(consultationId);
 
         consultation.setDischargeRecommended(true);
 
-        return consultationRepository.save(
-                consultation
-        );
+        return consultationRepository.save(consultation);
     }
 
+    private Consultation getConsultation(Long consultationId) {
 
-    private Consultation getConsultation(
-            Long consultationId) {
-
-        return consultationRepository
-                .findById(consultationId)
+        return consultationRepository.findById(consultationId)
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Consultation not found"
-                        )
-                );
+                        new RuntimeException("Consultation not found"));
     }
-
 
     // =========================================================
     // SPECIALIZATIONS
@@ -427,110 +342,163 @@ public class DoctorServiceImpl implements DoctorService {
     @Override
     public List<String> getSpecializations() {
 
-        return userRepository
-                .findByRole("DOCTOR")
+        return userRepository.findByRole("DOCTOR")
                 .stream()
-
                 .filter(user ->
                         user.getStatus() != null &&
-                        (
-                            user.getStatus()
-                                    .equalsIgnoreCase("ACTIVE")
-                            ||
-                            user.getStatus()
-                                    .equalsIgnoreCase("APPROVED")
-                        )
-                )
-
+                                (user.getStatus().equalsIgnoreCase("ACTIVE") ||
+                                        user.getStatus().equalsIgnoreCase("APPROVED")))
                 .map(User::getSpecialization)
-
                 .filter(specialization ->
                         specialization != null &&
-                        !specialization
-                                .trim()
-                                .isEmpty()
-                )
-
+                                !specialization.trim().isEmpty())
                 .map(String::trim)
-
                 .distinct()
-
                 .sorted()
-
                 .toList();
     }
-
 
     @Override
-    public List<User> getDoctorsBySpecialization(
-            String specialization) {
+    public List<User> getDoctorsBySpecialization(String specialization) {
 
-        return userRepository
-                .findByRole("DOCTOR")
+        return userRepository.findByRole("DOCTOR")
                 .stream()
-
                 .filter(user ->
                         user.getStatus() != null &&
-                        (
-                            user.getStatus()
-                                    .equalsIgnoreCase("ACTIVE")
-                            ||
-                            user.getStatus()
-                                    .equalsIgnoreCase("APPROVED")
-                        )
-                )
-
+                                (user.getStatus().equalsIgnoreCase("ACTIVE") ||
+                                        user.getStatus().equalsIgnoreCase("APPROVED")))
                 .filter(user ->
                         user.getSpecialization() != null &&
-                        user.getSpecialization()
-                                .equalsIgnoreCase(
-                                        specialization
-                                )
-                )
-
+                                user.getSpecialization().equalsIgnoreCase(
+                                        specialization))
                 .toList();
     }
+
     @Override
     public User getDoctorById(Long doctorId) {
 
         return userRepository.findById(doctorId)
                 .filter(user ->
-                        "DOCTOR".equalsIgnoreCase(user.getRole())
-                )
+                        "DOCTOR".equalsIgnoreCase(user.getRole()))
                 .orElseThrow(() ->
-                        new RuntimeException("Doctor not found")
-                );
+                        new RuntimeException("Doctor not found"));
     }
-    
+
+    // =========================================================
+    // APPOINTMENT VERIFICATION
+    // =========================================================
+
     @Override
     public Appointment verifyAppointment(Long appointmentId) {
 
-        Appointment appointment = appointmentRepository
-                .findById(appointmentId)
-                .orElseThrow(() ->
-                        new RuntimeException("Appointment not found")
-                );
+        Appointment appointment = appointmentRepository.findById(
+                appointmentId
+        ).orElseThrow(() ->
+                new RuntimeException("Appointment not found"));
 
         appointment.setVerified(true);
 
         return appointmentRepository.save(appointment);
     }
-    
+
     @Override
-    public List<Prescription> getPrescriptionsByAppointment(Long appointmentId) {
+    public List<Prescription> getPrescriptionsByAppointment(
+            Long appointmentId) {
 
         Consultation consultation = consultationRepository
                 .findByAppointmentId(appointmentId)
                 .orElseThrow(() ->
-                        new RuntimeException("Consultation not found for appointment"));
+                        new RuntimeException(
+                                "Consultation not found for appointment"));
 
-        return prescriptionRepository
-                .findByConsultationId(consultation.getId());
+        return prescriptionRepository.findByConsultationId(
+                consultation.getId());
     }
-    
+
     @Override
     public List<Vital> getVitalsByAppointment(Long appointmentId) {
 
         return vitalRepository.findByAppointmentId(appointmentId);
+    }
+
+    // =========================================================
+    // DOCTOR AVAILABILITY
+    // =========================================================
+
+    @Override
+    public DoctorAvailability addDoctorAvailability(
+            Long doctorId,
+            DoctorAvailability availability) {
+
+        User doctor = userRepository.findById(doctorId)
+                .filter(user ->
+                        "DOCTOR".equalsIgnoreCase(user.getRole()))
+                .orElseThrow(() ->
+                        new RuntimeException("Doctor not found"));
+
+        if (availability.getDate() == null ||
+                availability.getStartTime() == null ||
+                availability.getEndTime() == null ||
+                availability.getSlotDuration() == null) {
+
+            throw new RuntimeException(
+                    "All availability fields are required");
+        }
+
+        if (availability.getDate().isBefore(LocalDate.now())) {
+            throw new RuntimeException(
+                    "Availability date cannot be in the past");
+        }
+
+        if (!availability.getStartTime()
+                .isBefore(availability.getEndTime())) {
+
+            throw new RuntimeException(
+                    "End time must be after start time");
+        }
+
+        if (availability.getSlotDuration() != 15 &&
+                availability.getSlotDuration() != 30 &&
+                availability.getSlotDuration() != 45 &&
+                availability.getSlotDuration() != 60) {
+
+            throw new RuntimeException("Invalid slot duration");
+        }
+
+        List<DoctorAvailability> existing =
+                doctorAvailabilityRepository.findByDoctorIdAndDate(
+                        doctorId,
+                        availability.getDate());
+
+        for (DoctorAvailability record : existing) {
+
+            boolean overlaps =
+                    availability.getStartTime()
+                            .isBefore(record.getEndTime()) &&
+                    availability.getEndTime()
+                            .isAfter(record.getStartTime());
+
+            if (overlaps) {
+                throw new RuntimeException(
+                        "Availability already exists for this time range");
+            }
+        }
+
+        availability.setId(null);
+        availability.setDoctorId(doctor.getId());
+
+        return doctorAvailabilityRepository.save(availability);
+    }
+
+    @Override
+    public List<DoctorAvailability> getDoctorAvailability(Long doctorId) {
+
+        userRepository.findById(doctorId)
+                .filter(user ->
+                        "DOCTOR".equalsIgnoreCase(user.getRole()))
+                .orElseThrow(() ->
+                        new RuntimeException("Doctor not found"));
+
+        return doctorAvailabilityRepository.findByDoctorId(doctorId);
     }
 }

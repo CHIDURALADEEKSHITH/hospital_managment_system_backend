@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.hospital.entity.Appointment;
 import com.hospital.entity.Consultation;
+import com.hospital.entity.DoctorAvailability;
 import com.hospital.entity.LabTest;
 import com.hospital.entity.Prescription;
 import com.hospital.entity.User;
@@ -424,4 +425,27 @@ public class DoctorController {
                 doctorService.getVitalsByAppointment(appointmentId)
         );
     }
+    
+ // =========================================================
+ // DOCTOR AVAILABILITY
+ // =========================================================
+
+ @PostMapping("/{doctorId}/availability")
+ public ResponseEntity<DoctorAvailability> addDoctorAvailability(
+         @PathVariable Long doctorId,
+         @RequestBody DoctorAvailability availability) {
+
+     return ResponseEntity.ok(
+             doctorService.addDoctorAvailability(
+                     doctorId,
+                     availability));
+ }
+
+ @GetMapping("/{doctorId}/availability")
+ public ResponseEntity<List<DoctorAvailability>> getDoctorAvailability(
+         @PathVariable Long doctorId) {
+
+     return ResponseEntity.ok(
+             doctorService.getDoctorAvailability(doctorId));
+ }
 }
